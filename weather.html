@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Api</title>
+    <style>
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        font-size: 1rem;
+        margin: 20px;
+        background: rgb(90, 90, 247);
+      }
+
+      .wrapper {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        justify-content: space-between;
+        padding: 10px;
+        border: 1px solid black;
+        width: 600px;
+        margin: 10px;
+        background-image: linear-gradient(-10deg, rgb(187, 186, 186), white);
+
+      }
+      .wrapper:nth-child(odd) {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        justify-content: space-between;
+        padding: 10px;
+        border: 1px solid black;
+        width: 600px;
+        margin: 10px;
+        background-image: linear-gradient(-10deg, white, white);
+
+      }
+
+      .data {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: #333;
+      }
+      .data > p {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.513);
+        padding-bottom: 10px;
+        padding-top: 5px;
+        font-size: 1rem;
+      }
+
+      .data > p:last-child {
+        border: none;
+        padding-bottom: 5px;
+      }
+
+      .info {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        color: #333;
+        padding: 0;
+      }
+      .input_text{
+        width: 600px;
+        height: 55px;
+        padding: 5px 10px;
+        background: #e7e7e7;
+        border: none;
+        border-radius: 1px;
+        font-family: "Nunito",sans-serif;
+        font-weight:bold;
+        font-size: 20px;
+      }
+
+      .search {
+        padding: 15px 30px;
+        background: #e7e7e7;
+        border: none;
+        border-radius: 1px;
+        font-family: "Nunito", sans-serif;
+        font-weight: bold;
+        font-size: 20px;
+      }
+
+    </style>
+  </head>
+  <body>
+    
+    <input type="text" placeholder="Enter the city" class="input_text" />
+    <button class="search">Search</button>
+
+    <div class="container">
+      <div class="wrapper">
+        <div class="data"></div>
+      </div>
+    </div>
+
+    <script>
+
+      const KELVIN = 273.16;
+
+      async function fetchWeatherApi(api) {
+        const res = await fetch(api);
+        const data = await res.json();
+        return data;
+      }
+
+      async function cityApi(cityName) {
+        const data = await fetchWeatherApi(
+          `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=6b46ebe8a1898f2864cbd3161527757e`
+        );
+        const citiesWeather = {
+          name: data['name'],
+          temp: data['main']['temp'],
+          weather: data.weather[0].main,
+        };
+        citiesInfo(citiesWeather);
+      }
+
+      async function getApi(latitude, longitude) {
+        const data = await fetchWeatherApi(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=6b46ebe8a1898f2864cbd3161527757e`
+        );
+
+        const myLocation = {
+          name: data['name'],
+          temp: data['main']['temp'],
+          weather: data.weather[0].main,
+          sunrise: data['sys'].sunrise,
+          sunset: data['sys'].sunset,
+        };
+        myLocationInfo(myLocation);
+      }
+
+      function getTime(unix) {
+        let date = new Date(unix * 1000);
+        return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+      }
+
+      function myLocationInfo(myLocation) {
+        const weather = document.querySelector(".data");
+        weather.appendChild(setInfo('My Location: ' + myLocation.name));
+        weather.appendChild(
+          setInfo('Current Weather: ' + Math.floor(myLocation.temp - KELVIN) + ' °C')
+        );
+        weather.appendChild(
+          setInfo('Sunrise: ' + getTime(myLocation.sunrise))
+        );
+        weather.appendChild(
+          setInfo('Sunset: ' + getTime(myLocation.sunset))
+        );
+      }
+
+      function setInfo(text) {
+        const info = document.createElement("p");
+        info.textContent = text;
+        return info;
+      }
+
+      function citiesInfo(citiesWeather) {
+        const weather = document.querySelector(".container");
+        const cityWeather = document.createElement("div");
+
+        const info = document.createElement("div");
+        cityWeather.classList.add("wrapper");
+        info.classList.add("info");
+      
+        info.appendChild(setInfo(citiesWeather['name']));
+        info.appendChild(
+          setInfo(Math.floor(citiesWeather['temp'] - KELVIN) + ' °C')
+        );
+        cityWeather.appendChild(info);
+        weather.appendChild(cityWeather);
+      }
+
+      //get current location
+      function geoFindMe() {
+        function success(position) {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          getApi(latitude, longitude);
+        }
+
+        function error() {
+          status.textContent = "Unable to retrieve your location";
+        }
+
+        if (!navigator.geolocation) {
+          status.textContent = "Geolocation is not supported by your browser";
+        } else {
+          status.textContent = "Locating…";
+          navigator.geolocation.getCurrentPosition(success, error);
+        }
+      }
+
+      //current location function
+      geoFindMe();
+
+
+      function cityName() {
+        const input = document.querySelector(".input_text");
+        cityApi(input.value);
+      }
+
+      const btnSearch = document.querySelector(".search");
+      btnSearch.addEventListener("click", cityName);
+
+    </script>
+  </body>
+</html>
